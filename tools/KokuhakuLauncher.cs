@@ -42,7 +42,7 @@ public class KokuhakuLauncher : Form
     private const int TitleH = 36, SideW = 210;
 
     /// This launcher's own version: a newer release on GitHub replaces it.
-    private const string LauncherVersion = "1.3.0";
+    private const string LauncherVersion = "1.4.0";
     private const string Releases = "https://api.github.com/repos/jabjt/kokuhaku/releases";
     private const int MostShown = 7;
 

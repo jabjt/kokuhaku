@@ -153,6 +153,7 @@ public final class Railway {
             }
         }
         SkiSlope.build(world);
+        Crossings.build(world);
     }
 
     private static void lay(ServerWorld world) {

@@ -149,6 +149,18 @@ public class RunState extends PersistentState {
 
     public static RunState fromNbt(NbtCompound nbt) {
         RunState s = new RunState();
+        s.read(nbt);
+        return s;
+    }
+
+    /** Everything from a saved run, over whatever this one held. */
+    void read(NbtCompound nbt) {
+        RunState s = this;
+        for (java.util.Collection<?> c : List.of(party, found, known, accused, caught, dead, atScene, scenarios, pages, notes)) c.clear();
+        java.util.Arrays.fill(fondness, 0);
+        java.util.Arrays.fill(lockers, 0);
+        java.util.Arrays.fill(doorLocked, false);
+        mystery = null;
         s.started = nbt.getBoolean("Started");
         for (NbtElement id : nbt.getList("Party", NbtElement.INT_ARRAY_TYPE)) s.party.add(NbtHelper.toUuid(id));
         s.difficulty = Difficulty.values()[nbt.getInt("Difficulty")];
@@ -194,6 +206,5 @@ public class RunState extends PersistentState {
         for (int i : nbt.getIntArray("Known")) s.known.add(i);
         for (int i : nbt.getIntArray("Accused")) s.accused.add(i);
         for (int i : nbt.getIntArray("Caught")) s.caught.add(i);
-        return s;
     }
 }

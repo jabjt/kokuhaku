@@ -247,6 +247,8 @@ public final class RunManager {
         MinecraftServer server = host.server;
         RunState s = state(server);
         if (s.started || !server.isHost(host.getGameProfile())) return;
+        // A saved run can't be played over: it has to be finished first.
+        if (SaveSlot.exists() && System.getenv("KOKUHAKU_AUTOPLAY") == null) return;
         s.started = true;
         if (System.getenv("KOKUHAKU_SPECTATE") != null) spectators.add(players(server).get(players(server).size() - 1).getUuid());
         // Somebody's got to actually play.
@@ -300,6 +302,105 @@ public final class RunManager {
                 later(30, () -> wakeUp(p, s));
             }
         }
+        // The slot's taken from the first morning: you can quit now and come back to it.
+        later(40, () -> SaveSlot.write(s, false, gone, Accomplice.who(), players(server)));
+    }
+
+    /** Party members who weren't back yet when the host pressed Continue, and what they had on them. */
+    private static final Set<UUID> toWake = new HashSet<>();
+    private static NbtCompound savedBags = new NbtCompound();
+
+    /** The host pressed Continue: the saved run, back in this fresh town, waking up that morning. */
+    public static void resume(ServerPlayerEntity host) {
+        MinecraftServer server = host.server;
+        RunState s = state(server);
+        if (s.started || !server.isHost(host.getGameProfile())) return;
+        NbtCompound save = SaveSlot.read();
+        if (save == null) return;
+        boolean townBuilt = s.townBuilt;
+        long menuSeed = s.seed;
+        s.read(save.getCompound("State"));
+        s.townBuilt = townBuilt;
+        s.started = true;
+        s.studentsSpawned = true;
+        if (s.seed == 0) s.seed = menuSeed;
+        Set<UUID> wasGone = new HashSet<>();
+        for (net.minecraft.nbt.NbtElement e : save.getList("Gone", net.minecraft.nbt.NbtElement.STRING_TYPE)) wasGone.add(UUID.fromString(e.asString()));
+        savedBags = save.getCompound("Bags");
+        // Nobody here was in it (a new account, or one that changed): whoever's here takes the places in it, the host first.
+        if (players(server).stream().noneMatch(p -> s.party.contains(p.getUuid()))) {
+            List<ServerPlayerEntity> here = new ArrayList<>(players(server));
+            here.remove(host);
+            here.add(0, host);
+            NbtCompound bags = new NbtCompound();
+            Set<UUID> gone2 = new HashSet<>();
+            for (int i = 0; i < Math.min(here.size(), s.party.size()); i++) {
+                UUID was = s.party.get(i), now = here.get(i).getUuid();
+                if (savedBags.contains(was.toString())) bags.put(now.toString(), savedBags.get(was.toString()));
+                if (wasGone.contains(was)) gone2.add(now);
+                s.party.set(i, now);
+            }
+            savedBags = bags;
+            wasGone = gone2;
+            Kokuhaku.LOG.info("Continued under new names: {}", here.stream().limit(s.party.size()).map(p -> p.getGameProfile().getName()).toList());
+        }
+        // Anyone here who wasn't in it sits it out and watches.
+        for (ServerPlayerEntity p : players(server)) if (!s.party.contains(p.getUuid())) spectators.add(p.getUuid());
+        toWake.clear();
+        for (UUID id : s.party) if (server.getPlayerManager().getPlayer(id) == null) toWake.add(id);
+        StudentEntity.setShunning(s.devoted, s.livingWith);
+        if (save.contains("Accomplice")) {
+            ServerPlayerEntity a = server.getPlayerManager().getPlayer(UUID.fromString(save.getString("Accomplice")));
+            if (a != null) Accomplice.pick(a);
+        }
+        ServerWorld world = server.getOverworld();
+        spawnStudents(world, s);
+        for (StudentEntity e : students(server)) if (s.dead.contains(e.getSkin())) e.discard();
+        Townsfolk.spawn(world, town);
+        Teachers.spawn(world, town);
+        LunchHall.spawnCook(world);
+        Traffic.spawn(world);
+        world.setSpawnPos(town.graph.pos(town.homes.get(s.homes[Roster.TOTAL]).inside()), 0f);
+        s.markDirty();
+        boolean morning = save.getBoolean("Morning");
+        // Developer testing only: as if it was saved after night N.
+        if (System.getenv("KOKUHAKU_SAVENIGHT") != null) {
+            s.day = Integer.parseInt(System.getenv("KOKUHAKU_SAVENIGHT"));
+            morning = true;
+        }
+        Kokuhaku.LOG.info("Run continued: day {}{}, party of {}, {} still to join", morning ? s.day + 1 : s.day, morning ? " (after the night)" : "", s.party.size(), toWake.size());
+        transitioning = true;
+        for (ServerPlayerEntity p : players(server)) {
+            p.clearStatusEffects();
+            restoreBag(p);
+            sendState(p, s);
+            ServerPlayNetworking.send(p, Net.RUN_START, PacketByteBufs.empty());
+            if (spectators.contains(p.getUuid())) {
+                gone.add(p.getUuid());
+                later(40, () -> {
+                    if (s.party.size() == 1) watch(p, s);
+                    else becomeGhost(p, s);
+                });
+            } else if (wasGone.contains(p.getUuid())) {
+                gone.add(p.getUuid());
+                later(40, () -> becomeGhost(p, s));
+            }
+        }
+        if (morning) {
+            later(30, () -> newDay(server, s));
+        } else {
+            world.setTimeOfDay(Schedule.worldTime(s.day, s.minute));
+            for (ServerPlayerEntity p : living(server)) later(30, () -> wakeUp(p, s));
+        }
+    }
+
+    private static void restoreBag(ServerPlayerEntity p) {
+        String id = p.getUuid().toString();
+        if (savedBags.contains(id)) {
+            p.getInventory().clear();
+            p.getInventory().readNbt(savedBags.getList(id, net.minecraft.nbt.NbtElement.COMPOUND_TYPE));
+        }
+        if (p.getInventory().count(ModItems.ROOM_KEY) == 0) p.getInventory().setStack(1, new ItemStack(ModItems.ROOM_KEY));
     }
 
     /** Everyone lives in the district the mystery says they do; players get whatever's left, anywhere. */
@@ -333,6 +434,11 @@ public final class RunManager {
         } else {
             sendState(player, s);
             ServerPlayNetworking.send(player, Net.RUN_START, PacketByteBufs.empty());
+            if (toWake.remove(player.getUuid())) {
+                restoreBag(player);
+                later(30, () -> wakeUp(player, s));
+                return;
+            }
             if (watchers.contains(player.getUuid()) || spectators.contains(player.getUuid()) && s.party.size() == 1) watch(player, s);
             else if (gone.contains(player.getUuid())) taken(player, s);
         }
@@ -887,6 +993,7 @@ public final class RunManager {
         Peeker.tick();
         Seats.tick();
         if (ticks % 40 == 0) Townsfolk.tick(server, s, town);
+        Crossings.tick(living(server));
         Traffic.tick(server, living(server));
         if (ticks % CHATTER_EVERY == 0) Chatter.tick(s, students(server), living(server), ticks);
         devMeasureSpeed(server);
@@ -979,7 +1086,7 @@ public final class RunManager {
             List<String> subjects = Schedule.subjects(s.seed, Schedule.weekday(s.day));
             for (int p = 0; p < Schedule.PERIOD_START.length; p++) {
                 int start = Schedule.PERIOD_START[p];
-                if (m == start) announceAll(server, "Period " + (p + 1), subjects.get(p) + "  Â·  " + Schedule.room(subjects.get(p), s.day));
+                if (m == start) announceAll(server, "Period " + (p + 1), subjects.get(p) + "  ·  " + Schedule.room(subjects.get(p), s.day));
                 if (m >= start && m <= start + Schedule.LATE_GRACE) checkLesson(server, s, p, subjects.get(p));
             }
             if (m == Schedule.LUNCH) announceAll(server, "Lunch", "");
@@ -1153,12 +1260,12 @@ public final class RunManager {
         if (won > 0) {
             s.yen += won;
             s.markDirty();
-            later(60, () -> announce(player, "Hand up", "Â¥" + won + " from the class merit tin.", 0));
+            later(60, () -> announce(player, "Hand up", "¥" + won + " from the class merit tin.", 0));
         }
         if (wrong > 0) {
             int fine = wrong * FINE_PER_WRONG;
             if (s.yen > 0) s.yen = Math.max(0, s.yen - fine);
-            announce(player, wrong + " wrong.", "Your parents were called. They took Â¥" + fine + " of your allowance.", 0);
+            announce(player, wrong + " wrong.", "Your parents were called. They took ¥" + fine + " of your allowance.", 0);
         } else {
             announce(player, "All correct.", "The teacher barely looks up.", 0);
         }
@@ -1217,7 +1324,7 @@ public final class RunManager {
         RunState s = state(payer.server);
         if (s.status != RunState.Status.PLAYING || gone.contains(payer.getUuid()) || !callable(payer.server).contains(name)) return;
         if (s.yen < GHOST_COST) {
-            announce(payer, "", "It costs Â¥" + GHOST_COST + ". You've got Â¥" + s.yen + ".", 0);
+            announce(payer, "", "It costs ¥" + GHOST_COST + ". You've got ¥" + s.yen + ".", 0);
             return;
         }
         s.yen -= GHOST_COST;
@@ -1255,7 +1362,7 @@ public final class RunManager {
     /** Nobody left to be haunted for. */
     private static void nobodyLeft(MinecraftServer server, RunState s) {
         if (s.status != RunState.Status.PLAYING || !living(server).isEmpty() || ghosts.isEmpty()) return;
-        s.status = RunState.Status.LOST;
+        s.status = RunState.Status.LOST; SaveSlot.delete();
         s.markDirty();
         for (ServerPlayerEntity p : players(server)) {
             if (!isGhost(p)) continue;
@@ -1278,7 +1385,7 @@ public final class RunManager {
             s.yen += prize;
             s.markDirty();
         }
-        announce(p, who, line + (prize > 0 ? " +Â¥" + prize : ""), 0);
+        announce(p, who, line + (prize > 0 ? " +¥" + prize : ""), 0);
         finishLesson(p.server, s);
     }
 
@@ -1549,6 +1656,7 @@ public final class RunManager {
     }
 
     private static void newDay(MinecraftServer server, RunState s) {
+        if (s.status == RunState.Status.PLAYING) SaveSlot.write(s, true, gone, Accomplice.who(), players(server));
         s.day++;
         if (s.day > Schedule.DAYS && s.party.size() == 1 && Romance.datingHer(s)) {
             end(server, s, 1, Endings.confessed(Roster.get(s.dating).firstName()));
@@ -1617,7 +1725,7 @@ public final class RunManager {
         later(WAKE_TICKS + 4, () -> {
             transitioning = false;
             int left = Schedule.DAYS - s.day;
-            String sub = s.day > Schedule.DAYS ? "" : Schedule.WEEKDAYS[Schedule.weekday(s.day)] + (Schedule.isSchoolDay(s.day) ? "" : "  Â·  No school today") + "  Â·  " + (left == 0 ? "Last day" : left + (left == 1 ? " day left" : " days left"));
+            String sub = s.day > Schedule.DAYS ? "" : Schedule.WEEKDAYS[Schedule.weekday(s.day)] + (Schedule.isSchoolDay(s.day) ? "" : "  ·  No school today") + "  ·  " + (left == 0 ? "Last day" : left + (left == 1 ? " day left" : " days left"));
             if ((s.day - 1) % 3 == 0 && s.day <= Schedule.DAYS) {
                 String[] chapter = CHAPTERS[(s.day - 1) / 3];
                 announce(p, chapter[0], chapter[1], 0);
@@ -1827,7 +1935,7 @@ public final class RunManager {
         int pay = Math.max(0, job.pay() - mistakes * 400);
         s.yen += pay;
         s.markDirty();
-        announce(player, job.hours + " hours later", "You earned Â¥" + pay + (mistakes > 0 ? " (" + mistakes + " mistakes docked)" : ""), 1);
+        announce(player, job.hours + " hours later", "You earned ¥" + pay + (mistakes > 0 ? " (" + mistakes + " mistakes docked)" : ""), 1);
         if (mistakes >= 4) {
             s.firedUntil = s.day + 4;
             announce(player, "", "\"Don't come back this week.\" You were sent home.", 0);
@@ -2113,7 +2221,7 @@ public final class RunManager {
         ServerPlayerEntity them = left.get(0);
         String names = String.join(" and ", s.mystery().yanderes.stream().map(y -> Roster.get(y).name()).toList());
         Kokuhaku.LOG.info("The accomplice is the last one left");
-        s.status = RunState.Status.LOST;
+        s.status = RunState.Status.LOST; SaveSlot.delete();
         gone.add(them.getUuid());
         s.markDirty();
         for (ServerPlayerEntity p : players(server)) {
@@ -2191,6 +2299,8 @@ public final class RunManager {
     /** kind: 0 you lost, 1 you won, 2 the room and the jumpscare. */
     private static void end(MinecraftServer server, RunState s, int kind, String text) {
         s.status = kind == 1 ? RunState.Status.WON : RunState.Status.LOST;
+        // Finished, either way: the slot's free for the next one.
+        SaveSlot.delete();
         s.markDirty();
         String names = String.join(" and ", s.mystery().yanderes.stream().map(y -> Roster.get(y).name()).toList());
         for (ServerPlayerEntity p : players(server)) {
@@ -2579,7 +2689,7 @@ public final class RunManager {
                         : "It was " + names + (m.yanderes.size() > 1 ? ".\n\nThey're still smiling." : ".\n\nShe's still smiling.");
                 if (s.party.size() == 1) {
                     // Alone, you have to stand there and hear it.
-                    s.status = RunState.Status.WON;
+                    s.status = RunState.Status.WON; SaveSlot.delete();
                     s.caught.remove(girl);
                     String manner = manner(s);
                     s.caught.add(girl);

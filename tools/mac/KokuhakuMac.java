@@ -64,7 +64,7 @@ public final class KokuhakuMac extends JPanel {
     private static final Color RED = new Color(176, 24, 42), RED_LIT = new Color(206, 34, 54);
     private static final int W = 960, H = 620, TITLE_H = 36, SIDE_W = 210, MOST_SHOWN = 7;
     /** This launcher's own version: a newer release on GitHub replaces it. */
-    private static final String LAUNCHER_VERSION = "1.3.0";
+    private static final String LAUNCHER_VERSION = "1.4.0";
     private static final String RELEASES = "https://api.github.com/repos/jabjt/kokuhaku/releases";
     /** Name, detail, "ready" or not, and what changed. */
     private volatile String[][] VERSIONS = {{"Kokuhaku " + LAUNCHER_VERSION, "1.20.1  \u00b7  this one", "ready", "Looking for updates..."}, {"Next update", "1.20.1  \u00b7  WIP", "", ""}};

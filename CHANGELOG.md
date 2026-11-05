@@ -3,6 +3,17 @@
 Kokuhaku runs on Minecraft 1.20.1 (Fabric), launched through Prism Launcher.
 Versions before 1.3.0 weren't tagged at the time; their entries were written up afterwards.
 
+## 1.4.0 — 6 November 2026
+
+### New
+- **Save and Continue.** Your run saves every morning. Quit whenever you like, and **Continue** on the menu puts you back in bed that morning. There's one save slot: you can't start a new run until the saved one is finished.
+- **Traffic lights** at every crossing. Cars stop at red, and for anyone on the stripes whatever the lights say. People wait at the kerb for their turn. Anywhere else in the road, the cars still don't stop for you.
+- Walking looks more natural: arms swing further forward than back and hang away from the body, feet turn out a little, and the stride has some weight in it. Nobody bounces along when they're frightened.
+
+### Fixed
+- Cars drove over crossings while people were still on them.
+- Garbled characters on the morning banner and in a few other messages.
+
 ## 1.3.0 — 5 November 2026
 
 ### New

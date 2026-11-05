@@ -126,7 +126,8 @@ public final class MenuScene {
         if (wanted != null && Party.members.size() < Integer.parseInt(wanted)) return;
         if (--autoplayIn == 0) {
             if (DevShots.ON) DevShots.take();
-            start(Difficulty.EASY);
+            if (System.getenv("KOKUHAKU_CONTINUE") != null) continueRun();
+            else start(Difficulty.EASY);
         }
     }
 
@@ -144,6 +145,11 @@ public final class MenuScene {
             buf.writeBoolean(accomplice);
             ClientPlayNetworking.send(Net.START, buf);
         }));
+    }
+
+    /** The host carries on the saved run, everyone in the room with them. */
+    public static void continueRun() {
+        MinecraftClient.getInstance().setScreen(new com.kokuhaku.screen.BlackoutScreen(() -> ClientPlayNetworking.send(Net.CONTINUE, PacketByteBufs.empty())));
     }
 
     /** The run has started: the menu goes away and the camera goes back to normal. */

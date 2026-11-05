@@ -23,7 +23,8 @@ import java.util.Random;
 /**
  * The town's traffic. Townsfolk drive Trep's Cars around fixed lanes on the
  * left of the road, the way they do here. Nobody else can get in, and they
- * stop for each other and for pedestrians, but not for you.
+ * stop for each other, at red lights, and for anyone on a crossing. Anywhere
+ * else in the road, they don't stop for you.
  */
 public final class Traffic {
     /** Road surface, plus the height of a car's wheels. */
@@ -36,8 +37,8 @@ public final class Traffic {
     /** Half the car, and half a person, either way. */
     private static final double HIT_LENGTH = 2.8, HIT_WIDTH = 1.55, HIT_SPEED = 0.15;
     private static final double HORN_RANGE = 15.0, IMPACT_LEAD = 9, CROSSING_LOOKAHEAD = 7;
-    private static final int HORN_GAP = 60, ENGINE_GAP = 50, PATIENCE = 50, STAYS_OUT = 6, OUT_OF_SIGHT = 60;
-    private static final double UNDER_THE_ROAD = -18, SCENE_REACH = 45;
+    private static final int HORN_GAP = 60, ENGINE_GAP = 50, PATIENCE = 160, STAYS_OUT = 6, OUT_OF_SIGHT = 60;
+    private static final double UNDER_THE_ROAD = -18, SCENE_REACH = 45, LINE_EASE = 0.06;
     /** How long a car sits behind another lane's traffic before it goes anyway, and how long it keeps going. */
     private static final int STUCK_TICKS = 50, PUSH_TICKS = 70;
     private static final String[] COLOURS = {"wr", "wb", "wbl", "ww", "wg", "wlg", "wy", "wo"};
@@ -253,7 +254,7 @@ public final class Traffic {
                 folk++;
                 if (e.hasRoute()) walking++;
             }
-            Kokuhaku.LOG.info("SERVER townsfolk {}, walking {}", folk, walking);
+            Kokuhaku.LOG.info("SERVER townsfolk {}, walking {}, lights {}", folk, walking, Crossings.status());
             Kokuhaku.LOG.info("SERVER train: {}", Railway.status());
         }
 
@@ -287,6 +288,9 @@ public final class Traffic {
             } else {
                 car.waited = 0;
             }
+            // The lights, and anyone on the stripes: brake to stop at the line.
+            double toTheLine = Crossings.stopAhead(pos, heading);
+            if (toTheLine >= 0) wanted = Math.min(wanted, toTheLine < 0.4 ? 0 : Math.min(car.lane.cruise, toTheLine * LINE_EASE));
             boolean walking = !walks.isEmpty();
             if (walking && onAWalk(pos)) wanted = car.lane.cruise;
             else if (walking || parked || RunManager.scenePlaying() || sceneNear(players, pos) || Railway.blocksCrossing(pos.add(heading.multiply(CROSSING_LOOKAHEAD)))) wanted = 0;

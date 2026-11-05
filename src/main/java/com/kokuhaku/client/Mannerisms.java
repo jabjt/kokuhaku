@@ -219,14 +219,31 @@ final class Mannerisms {
             default -> 0.92f;
         };
         float phase = limbPos * STRIDE_RATE, turn = MathHelper.sin(phase) * 0.09f * amount;
-        m.rightLeg.pitch *= MathHelper.lerp(amount, 1f, step);
-        m.leftLeg.pitch *= MathHelper.lerp(amount, 1f, step);
+        m.rightLeg.pitch = stride(m.rightLeg.pitch * MathHelper.lerp(amount, 1f, step), phase, amount);
+        m.leftLeg.pitch = stride(m.leftLeg.pitch * MathHelper.lerp(amount, 1f, step), phase + MathHelper.PI, amount);
+        // Feet turned out a touch, the way nobody walks with them dead straight.
+        m.rightLeg.yaw += 0.06f * amount;
+        m.leftLeg.yaw -= 0.06f * amount;
         m.body.yaw += turn;
         m.rightArm.pivotZ += MathHelper.sin(turn) * 5f;
         m.leftArm.pivotZ -= MathHelper.sin(turn) * 5f;
-        m.rightArm.pitch -= 0.07f * amount;
-        m.leftArm.pitch -= 0.07f * amount;
+        // Arms swing further forward than back, and hang a little out from the hips rather than brushing them.
+        m.rightArm.pitch = armSwing(m.rightArm.pitch, amount) - 0.07f * amount;
+        m.leftArm.pitch = armSwing(m.leftArm.pitch, amount) - 0.07f * amount;
+        m.rightArm.roll += 0.07f * amount;
+        m.leftArm.roll -= 0.07f * amount;
         m.head.yaw -= turn * 0.6f;
+    }
+
+    /** A leg pushes back off the ground slowly and swings through quicker: weight on it, then none. */
+    private static float stride(float pitch, float phase, float amount) {
+        // Forward is negative. The swing through gets a little extra lift at its height, the push back a little less reach.
+        float shaped = pitch < 0f ? pitch * (1f + 0.12f * Math.max(0f, MathHelper.sin(phase))) : pitch * 0.9f;
+        return MathHelper.lerp(amount, pitch, shaped);
+    }
+
+    private static float armSwing(float pitch, float amount) {
+        return MathHelper.lerp(amount, pitch, pitch < 0f ? pitch * 1.12f : pitch * 0.72f);
     }
 
     private static void walking(PlayerEntityModel<StudentEntity> m, StudentEntity e, float clock, float age, float amount, float speaking) {
@@ -406,6 +423,10 @@ final class Mannerisms {
     /** Up onto each step and down off it. */
     static float bob(StudentEntity e, float limbPos, float limbSpeed) {
         float height = kind(e) == Personality.SPORTY ? 0.05f : kind(e) == Personality.COLD ? 0.02f : 0.035f;
-        return Math.abs(MathHelper.sin(limbPos * STRIDE_RATE)) * height * walkAmount(limbSpeed);
+        // Frightened or grieving, nobody bounces along.
+        if (e.getMood() == StudentEntity.AFRAID || e.getMood() == StudentEntity.GRIEVING) height *= 0.5f;
+        // Highest over the foot that's taking the weight, a little higher on the stronger side.
+        float s = MathHelper.sin(limbPos * STRIDE_RATE);
+        return Math.abs(s) * height * (s > 0 ? 1f : 0.88f) * walkAmount(limbSpeed);
     }
 }

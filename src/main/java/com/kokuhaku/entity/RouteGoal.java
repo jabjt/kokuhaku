@@ -158,6 +158,15 @@ public class RouteGoal extends Goal {
         Vec3d target = mob.waypoint();
         if (target == null) return;
         Vec3d pos = mob.getPos();
+        // At the kerb with the cars still on green: they wait for the lights, like everyone does.
+        if (com.kokuhaku.game.Crossings.waitAtKerb(mob, target, mob.waypointAhead(2), mob.waypointAhead(4), mob.waypointAhead(6))) {
+            mob.getNavigation().stop();
+            mob.getMoveControl().moveTo(pos.x, pos.y, pos.z, 0);
+            mob.setVelocity(0, mob.getVelocity().y, 0);
+            lastProgress = mob.age;
+            anchor = null;
+            return;
+        }
         closeDoors(pos);
         // Something's going on round there. They don't know what. They just find a reason not to go that way.
         Vec3d out = StudentEntity.keepOut();

@@ -182,6 +182,11 @@ public final class Town {
         set(at.getX(), at.getY(), at.getZ(), ModBlocks.JOB_BOARD.getDefaultState().with(ThinPanelBlock.FACING, Direction.SOUTH));
     }
 
+    /** Every crossing, as x1 z1 x2 z2. */
+    public static List<int[]> crossings() {
+        return java.util.Collections.unmodifiableList(CROSSINGS);
+    }
+
     /** The road surface, which nobody on foot goes near unless they're at a crossing. */
     public static boolean isRoad(BlockView view, int x, int z) {
         return isRoad(view, x, z, ON_THE_STRIPES);

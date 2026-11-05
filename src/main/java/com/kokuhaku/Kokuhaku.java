@@ -150,6 +150,7 @@ public class Kokuhaku implements ModInitializer {
             String text = buf.readString(200), signed = buf.readString(64);
             server.execute(() -> com.kokuhaku.game.Noticeboard.post(player, text, signed));
         });
+        ServerPlayNetworking.registerGlobalReceiver(Net.CONTINUE, (server, player, handler, buf, sender) -> server.execute(() -> RunManager.resume(player)));
         ServerPlayNetworking.registerGlobalReceiver(Net.SPECTATE, (server, player, handler, buf, sender) -> {
             boolean on = buf.readBoolean();
             server.execute(() -> RunManager.spectate(player, on));

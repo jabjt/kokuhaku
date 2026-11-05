@@ -50,6 +50,10 @@ public final class Accomplice {
         return who != null && who.equals(p.getUuid());
     }
 
+    static UUID who() {
+        return on ? who : null;
+    }
+
     static boolean active() {
         return on;
     }

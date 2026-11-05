@@ -83,13 +83,23 @@ public class KokuhakuTitleScreen extends Screen {
                 MenuScene.leave(client);
                 client.setScreen(new TitleScreen());
             }));
+        } else if (com.kokuhaku.game.SaveSlot.exists()) {
+            // One run at a time: it has to be finished before there's another.
+            com.kokuhaku.game.SaveSlot.Summary saved = com.kokuhaku.game.SaveSlot.summary();
+            addDrawableChild(new MenuButton(x, y, 150, 20, KokuhakuClient.menuText("Continue  \u00b7  Day " + saved.day()), b -> MenuScene.continueRun()));
+            MenuButton play = new MenuButton(x, y + 24, 150, 20, KokuhakuClient.menuText("Play Game"), b -> {
+            });
+            play.active = false;
+            play.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Finish your saved run first. It's Day " + saved.day() + (saved.players().isEmpty() ? "" : ", with " + saved.players()) + ".")));
+            addDrawableChild(play);
         } else {
             addDrawableChild(new MenuButton(x, y, 150, 20, KokuhakuClient.menuText("Play Game"),
                     b -> client.setScreen(new DifficultyScreen(this))));
         }
-        addDrawableChild(new MenuButton(x, y + (Party.isGuest(client) ? 48 : 24), 150, 20, KokuhakuClient.menuText("How to Play"),
+        int below = !Party.isGuest(client) && com.kokuhaku.game.SaveSlot.exists() ? 24 : 0;
+        addDrawableChild(new MenuButton(x, y + below + (Party.isGuest(client) ? 48 : 24), 150, 20, KokuhakuClient.menuText("How to Play"),
                 b -> client.setScreen(new HowToPlayScreen(this))));
-        addDrawableChild(new MenuButton(x, y + (Party.isGuest(client) ? 72 : 48), 150, 20, KokuhakuClient.menuText("Settings"),
+        addDrawableChild(new MenuButton(x, y + below + (Party.isGuest(client) ? 72 : 48), 150, 20, KokuhakuClient.menuText("Settings"),
                 b -> client.setScreen(new SettingsScreen(this))));
         memberMenu();
     }

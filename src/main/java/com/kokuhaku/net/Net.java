@@ -87,6 +87,8 @@ public final class Net {
     public static final Identifier PROFILE = id("profile");
     /** Whether you're sitting this run out as a ghost. */
     public static final Identifier SPECTATE = id("spectate");
+    /** The host wants the saved run back. */
+    public static final Identifier CONTINUE = id("continue");
     /** PE on the court: difficulty. */
     public static final Identifier HOOPS = id("hoops");
     /** Baskets made, shots taken. */
