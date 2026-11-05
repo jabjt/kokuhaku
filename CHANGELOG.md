@@ -8,6 +8,7 @@ Versions before 1.3.0 weren't tagged at the time; their entries were written up 
 ### New
 - **Save and Continue.** Your run saves every morning. Quit whenever you like, and **Continue** on the menu puts you back in bed that morning. There's one save slot: you can't start a new run until the saved one is finished.
 - **Traffic lights** at every crossing. Cars stop at red, and for anyone on the stripes whatever the lights say. People wait at the kerb for their turn. Anywhere else in the road, the cars still don't stop for you.
+- **Everyone wears the uniform** in multiplayer. Your friends look like classmates, not their Minecraft skins, told apart by their hair: dark, chestnut or fair.
 - Walking looks more natural: arms swing further forward than back and hang away from the body, feet turn out a little, and the stride has some weight in it. Nobody bounces along when they're frightened.
 
 ### Fixed

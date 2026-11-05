@@ -3349,6 +3349,14 @@ public final class RunManager {
                 }
                 for (int i = 1; i <= 8; i++) later(i * 110, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
             });
+            case "meet" -> later(80, () -> {
+                // Everyone in the party face to face on the pavement, to see what they look like to each other.
+                for (ServerPlayerEntity q : players(p.server)) {
+                    int i = Math.max(0, s.party.indexOf(q.getUuid()));
+                    q.teleport(q.getServerWorld(), -643.5 + i * 2.2, 22, -24.5, i == 0 ? -90f : 90f, 5f);
+                    for (int n = 1; n <= 4; n++) later(n * 40, () -> ServerPlayNetworking.send(q, Net.SHOT, PacketByteBufs.empty()));
+                }
+            });
             case "mountainview" -> later(60, () -> {
                 s.day = 3;
                 s.minute = 11 * 60;
