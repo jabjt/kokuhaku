@@ -1,0 +1,30 @@
+# Publishes Kokuhaku 1.4.0 at 9am UK time on 6 November 2026 (09:00 UTC).
+# The release is waiting as a draft, which nobody else can see and no launcher
+# picks up; this makes it public and brings main up to the 1.4.0 code.
+# It can also be started by hand from the Actions tab. Once 1.4.0 is out it
+# does nothing, so it's harmless if it ever runs again.
+name: Publish 1.4.0
+on:
+  schedule:
+    - cron: '0 9 6 11 *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(gh release view v1.4.0 --json isDraft -q .isDraft 2>/dev/null)" != "true" ]; then
+            echo "Nothing waiting to be published."
+            exit 0
+          fi
+          git push origin refs/remotes/origin/release-1.4.0:refs/heads/main
+          gh release edit v1.4.0 --draft=false --latest
+          echo "Kokuhaku 1.4.0 is out."
