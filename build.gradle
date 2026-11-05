@@ -1,0 +1,83 @@
+plugins {
+    id 'fabric-loom' version '1.7.4'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { url 'https://api.modrinth.com/maven' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // Shaders: Complementary needs Iris, which needs Sodium.
+    modRuntimeOnly "maven.modrinth:sodium:mc1.20.1-0.5.8"
+    modRuntimeOnly "maven.modrinth:iris:1.7.0+1.20.1"
+    // Connected textures: the map's furniture and walls are built on them. Continuity needs Indium under Sodium.
+    modRuntimeOnly "maven.modrinth:indium:1.0.30+mc1.20.4"
+    modRuntimeOnly "maven.modrinth:continuity:3.0.0-beta.5+1.20.1"
+    modRuntimeOnly "maven.modrinth:sound-physics-remastered:fabric-1.20.1-1.5.1"
+    // The town's traffic. Not on Modrinth, so it's kept in libs/.
+    modRuntimeOnly files('libs/geckolib-fabric-1.20.1-4.8.4.jar', 'libs/treps-cars-0.9-1.20.1.jar')
+    // GeckoLib carries this inside its jar, which only unpacks outside the dev environment.
+    runtimeOnly fileTree('libs/dev') { include '*.jar' }
+    // Trains. Compiled against so the town can lay track and run a timetable.
+    modImplementation "maven.modrinth:create-fabric:6.0.8.1+build.1744-mc1.20.1"
+
+    // What Create carries inside its jar, which the dev environment doesn't unpack.
+    modImplementation fileTree('libs/dev/mods') { include '*.jar' }
+    runtimeOnly "org.anarres:jcpp:1.4.14"
+    runtimeOnly "io.github.douira:glsl-transformer:2.0.1"
+    runtimeOnly "org.antlr:antlr4-runtime:4.11.1"
+}
+
+// A second copy of the game to test a party with: gradlew runFriend
+loom {
+    runs {
+        friend {
+            client()
+            name = "Friend"
+            runDir "run2"
+            programArgs "--username", "Friend"
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 17
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Developer tools that read Minecraft's own files: never part of the mod.
+sourceSets {
+    tools {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+tasks.register('mapTool', JavaExec) {
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'com.kokuhaku.tools.MapTool'
+    args = ((project.findProperty('mapArgs') ?: '') as String).split('@') as List
+    maxHeapSize = '3g'
+}

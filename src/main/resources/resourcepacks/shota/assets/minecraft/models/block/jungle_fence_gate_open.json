@@ -1,0 +1,23 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/crimson_fence_gate_open",
+	"texture_size": [52, 52],
+	"textures": {
+		"0": "block/screendoor2",
+		"particle": "block/screendoor2"
+	},
+	"elements": [
+		{
+			"from": [14.3, -16, -16],
+			"to": [16, 32, 16],
+			"faces": {
+				"north": {"uv": [0, 0.75, 0.22422, 5.57023], "texture": "#0"},
+				"east": {"uv": [8, 0, 16, 16], "texture": "#0"},
+				"south": {"uv": [0, 0, 0.10883, 4.82023], "texture": "#0"},
+				"west": {"uv": [0, 0.125, 7.99345, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 2.49345, 0.08946], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [0.375, 16, 2.86845, 15.50292], "rotation": 270, "texture": "#0"}
+			}
+		}
+	]
+}

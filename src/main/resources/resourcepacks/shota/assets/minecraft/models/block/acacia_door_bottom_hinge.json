@@ -1,0 +1,22 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/door_bottom",
+	"textures": {
+		"bottom": "block/acacia_door_bottom"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [3, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [-5, 8, 8]},
+			"faces": {
+				"north": {"uv": [14, 0, 16, 16], "rotation": 180, "texture": "#bottom"},
+				"east": {"uv": [0, 0, 15.999, 16], "rotation": 180, "texture": "#bottom"},
+				"south": {"uv": [14, 0, 16, 16], "rotation": 180, "texture": "#bottom"},
+				"west": {"uv": [0, 0, 16, 16], "rotation": 180, "texture": "#bottom"},
+				"up": {"uv": [6.64, 9.68, 10.316, 12.959], "rotation": 90, "texture": "#bottom"},
+				"down": {"uv": [14, 0, 16, 16], "texture": "#bottom"}
+			}
+		}
+	]
+}

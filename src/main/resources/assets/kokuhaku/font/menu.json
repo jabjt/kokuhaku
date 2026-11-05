@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "kokuhaku:special_elite.ttf",
+      "shift": [0, 1],
+      "size": 10,
+      "oversample": 6
+    }
+  ]
+}

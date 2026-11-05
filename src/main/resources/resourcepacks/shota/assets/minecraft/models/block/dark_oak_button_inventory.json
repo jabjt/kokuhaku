@@ -1,0 +1,7 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/button_inventory",
+	"textures": {
+		"texture": "block/dark_oak_planks"
+	}
+}

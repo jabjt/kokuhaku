@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {"particle": "kokuhaku:block/rock", "a": "kokuhaku:block/rock", "b": "kokuhaku:block/rock"},
+  "elements": [
+    {"from": [0, 0, 0], "to": [16, 16, 16], "faces": {"north": {"texture": "#a"}, "south": {"texture": "#a"}, "east": {"texture": "#a"}, "west": {"texture": "#a"}, "up": {"texture": "#a"}, "down": {"texture": "#a"}}},
+    {"from": [16, 0, 2], "to": [24, 8, 14], "faces": {"north": {"texture": "#b"}, "south": {"texture": "#b"}, "east": {"texture": "#b"}, "up": {"texture": "#b"}, "down": {"texture": "#b"}}}
+  ]
+}

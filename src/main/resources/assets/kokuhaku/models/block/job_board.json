@@ -1,0 +1,1 @@
+{"textures":{"particle":"kokuhaku:block/corkboard","t":"kokuhaku:block/corkboard"},"elements":[{"from":[0,0,14],"to":[16,16,16],"faces":{"north":{"texture":"#t"},"south":{"texture":"#t"},"east":{"texture":"#t"},"west":{"texture":"#t"},"up":{"texture":"#t"},"down":{"texture":"#t"}}}]}

@@ -1,0 +1,30 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.kokuhaku.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "CarMovementMixin",
+    "NoJumpMixin",
+    "NoSprintMixin",
+    "TrainDriverMixin"
+  ],
+  "client": [
+    "CameraMixin",
+    "ChatHudMixin",
+    "CreateSodiumMixin",
+    "DisconnectedScreenAccessor",
+    "GameRendererMixin",
+    "InGameHudMixin",
+    "KeyboardMixin",
+    "LoadingScreenMixin",
+    "MinecraftClientMixin",
+    "MusicTrackerMixin",
+    "PlayerSkinMixin",
+    "SplashOverlayMixin",
+    "ToastManagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

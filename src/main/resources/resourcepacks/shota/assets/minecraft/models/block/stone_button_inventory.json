@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/button_inventory",
+	"textures": {
+		"1": "block/ev5",
+		"particle": "block/ev5"
+	}
+}

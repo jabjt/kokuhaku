@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"kokuhaku:block/job_board"},"facing=east":{"model":"kokuhaku:block/job_board","y":90},"facing=south":{"model":"kokuhaku:block/job_board","y":180},"facing=west":{"model":"kokuhaku:block/job_board","y":270}}}

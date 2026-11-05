@@ -1,0 +1,25 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/door_top",
+	"texture_size": [52, 52],
+	"textures": {
+		"0": "block/screendoor2",
+		"top": "block/acacia_door_top",
+		"particle": "block/screendoor2"
+	},
+	"elements": [
+		{
+			"from": [0, 8, -8],
+			"to": [1.7, 32, 24],
+			"rotation": {"angle": 0, "axis": "x", "origin": [0.85, 16, 8]},
+			"faces": {
+				"north": {"uv": [7.67, 0, 8.375, 15.75], "texture": "#0"},
+				"east": {"uv": [0.125, 0, 7.835, 8.125], "texture": "#0"},
+				"south": {"uv": [7.795, 0, 8.375, 15.875], "texture": "#0"},
+				"west": {"uv": [0, 0, 7.96, 8.25], "texture": "#0"},
+				"up": {"uv": [7.2, 11.04, 11.24, 13.119], "rotation": 270, "texture": "#top"},
+				"down": {"uv": [5.68, 11.28, 10.76, 13.519], "rotation": 270, "texture": "#top"}
+			}
+		}
+	]
+}

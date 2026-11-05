@@ -1,0 +1,30 @@
+# Build output and caches
+.gradle/
+build/
+dist/
+out/
+bin/
+*.class
+
+# Test worlds and logs
+run/
+run2/
+*.log
+hs_err_pid*.log
+replay_pid*.log
+run-latest.txt
+run-test.txt
+/*.png
+
+# Not ours to publish
+src/main/resources/assets/kokuhaku/sounds/radio/*.ogg
+libs/dev/
+
+# Built launchers go in releases
+*.exe
+*.tar.gz
+tools/launcher/map.txt.bak
+
+.idea/
+*.iml
+.vscode/
