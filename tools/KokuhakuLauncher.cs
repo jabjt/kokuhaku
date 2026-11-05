@@ -389,6 +389,9 @@ public class KokuhakuLauncher : Form
         List<string> lines = new List<string>();
         foreach (string raw in (body ?? "").Replace("\r", "").Split('\n'))
         {
+            // Hidden notes, how to download it (you have), and asides: not for in here.
+            if (raw.TrimStart().StartsWith("<!--") || raw.TrimStart().StartsWith("_")) continue;
+            if (raw.StartsWith("## Download")) break;
             string line = raw.Replace("**", "").Replace("`", "").TrimEnd();
             if (line.StartsWith("#")) line = line.TrimStart('#', ' ').ToUpperInvariant();
             else if (line.StartsWith("- ") || line.StartsWith("* ")) line = "\u2022  " + line.Substring(2);
@@ -425,7 +428,9 @@ public class KokuhakuLauncher : Form
                 if (r == null || Get(r, "draft") == "True") continue;
                 System.Version number = Number(Get(r, "tag_name"));
                 if (number == null) continue;
-                Release release = new Release { Number = number, Tag = Get(r, "tag_name"), Notes = Plain(Get(r, "body")), Date = When(Get(r, "published_at")) };
+                // When it really came out, if the notes say: older versions were put up later than they were made.
+                System.Text.RegularExpressions.Match dated = System.Text.RegularExpressions.Regex.Match(Get(r, "body"), @"<!--\s*date:\s*(\d{4}-\d{2}-\d{2})\s*-->");
+                Release release = new Release { Number = number, Tag = Get(r, "tag_name"), Notes = Plain(Get(r, "body")), Date = When(dated.Success ? dated.Groups[1].Value + "T12:00:00Z" : Get(r, "published_at")) };
                 object assets;
                 if (r.TryGetValue("assets", out assets) && assets is object[])
                 {
@@ -533,7 +538,7 @@ public class KokuhakuLauncher : Form
     private Rectangle NotesBox()
     {
         int left = SideW + 48;
-        return new Rectangle(left, TitleH + 184, ClientSize.Width - left - 48, ClientSize.Height - TitleH - 184 - 170);
+        return new Rectangle(left, TitleH + 200, ClientSize.Width - left - 48, ClientSize.Height - TitleH - 200 - 160);
     }
 
     protected override void OnMouseWheel(MouseEventArgs e)

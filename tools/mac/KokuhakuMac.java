@@ -73,7 +73,7 @@ public final class KokuhakuMac extends JPanel {
     private final JFrame frame;
     private final Path pack;
     private final Rectangle minBox = new Rectangle(W - 92, 0, 46, TITLE_H), closeBox = new Rectangle(W - 46, 0, 46, TITLE_H), launchBox = new Rectangle(SIDE_W + 48, H - 140, 220, 54);
-    private final Rectangle notesBox = new Rectangle(SIDE_W + 48, TITLE_H + 196, W - SIDE_W - 96, H - TITLE_H - 196 - 170);
+    private final Rectangle notesBox = new Rectangle(SIDE_W + 48, TITLE_H + 206, W - SIDE_W - 96, H - TITLE_H - 206 - 160);
     private final Font huge = new Font("Georgia", Font.PLAIN, 44), body = new Font("Helvetica Neue", Font.PLAIN, 14), small = new Font("Helvetica Neue", Font.PLAIN, 12), bold = new Font("Helvetica Neue", Font.BOLD, 14), button = new Font("Helvetica Neue", Font.BOLD, 17);
     private int selected = 0, hover = -1;
     private boolean overLaunch, overMin, overClose;
@@ -308,6 +308,9 @@ public final class KokuhakuMac extends JPanel {
     private static String plain(String body) {
         List<String> lines = new ArrayList<>();
         for (String raw : body.replace("\r", "").split("\n", -1)) {
+            // Hidden notes, how to download it (you have), and asides: not for in here.
+            if (raw.strip().startsWith("<!--") || raw.strip().startsWith("_")) continue;
+            if (raw.startsWith("## Download")) break;
             String line = raw.replace("**", "").replace("`", "").stripTrailing();
             if (line.startsWith("#")) line = line.replaceFirst("^#+\\s*", "").toUpperCase();
             else if (line.startsWith("- ") || line.startsWith("* ")) line = "\u2022  " + line.substring(2);
@@ -350,7 +353,9 @@ public final class KokuhakuMac extends JPanel {
             int c = compare(v, mine);
             if (c == 0) me = list.size();
             String notes = plain(text(r.get("body")));
-            list.add(new String[]{"Kokuhaku " + shown(v), when(text(r.get("published_at"))) + (c == 0 ? "  \u00b7  this one" : c > 0 ? "  \u00b7  new" : ""), "ready", notes.isEmpty() ? "No notes for this one." : notes});
+            java.util.regex.Matcher dated = java.util.regex.Pattern.compile("<!--\\s*date:\\s*(\\d{4}-\\d{2}-\\d{2})\\s*-->").matcher(text(r.get("body")));
+            String date = dated.find() ? dated.group(1) + "T12:00:00Z" : text(r.get("published_at"));
+            list.add(new String[]{"Kokuhaku " + shown(v), when(date) + (c == 0 ? "  \u00b7  this one" : c > 0 ? "  \u00b7  new" : ""), "ready", notes.isEmpty() ? "No notes for this one." : notes});
         }
         if (list.isEmpty()) {
             VERSIONS[0][3] = "This is the newest version.";
