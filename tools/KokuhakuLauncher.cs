@@ -43,7 +43,7 @@ public class KokuhakuLauncher : Form
 
     /// This launcher's own version: a newer release on GitHub replaces it.
     private const string LauncherVersion = "1.4.1";
-    private const string Releases = "https://api.github.com/repos/jabjt/kokuhaku/releases";
+    private const string Releases = "https://api.github.com/repos/jackieboyjt/kokuhaku/releases";
     private const int MostShown = 7;
 
     private sealed class Version
@@ -130,10 +130,16 @@ public class KokuhakuLauncher : Form
                     }
                 }
                 // Fabric's copies of the mods inside mods: with the mods changed, stale ones stop it starting.
+                // Moved aside before it's deleted: Windows can take a while to finish deleting a folder,
+                // and until it has, Fabric can't make a new one of the same name and won't start.
                 try
                 {
-                    string cache = Path.Combine(instance, ".minecraft", ".fabric");
-                    if (Directory.Exists(cache)) Directory.Delete(cache, true);
+                    string minecraft = Path.Combine(instance, ".minecraft"), cache = Path.Combine(minecraft, ".fabric");
+                    if (Directory.Exists(cache)) Directory.Move(cache, cache + ".old-" + DateTime.Now.Ticks);
+                    foreach (string old in Directory.GetDirectories(minecraft, ".fabric.old-*"))
+                    {
+                        try { Directory.Delete(old, true); } catch (Exception) { }
+                    }
                 }
                 catch (Exception) { }
                 int done = 0, all = zip.Entries.Count;
