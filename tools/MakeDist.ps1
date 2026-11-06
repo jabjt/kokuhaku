@@ -22,6 +22,7 @@ $wanted = @(
     @{ project = 'immediatelyfast'; version = '1.5.5+1.20.4-fabric' },
     @{ project = 'lazydfu'; version = '0.1.3' },
     @{ project = 'ferrite-core'; version = '6.0.1' },
+    @{ project = 'modernfix'; version = '5.25.2+mc1.20.1' },
     # Walls muffle sound, and rooms echo.
     @{ project = 'sound-physics-remastered'; version = 'fabric-1.20.1-1.5.1' }
 )

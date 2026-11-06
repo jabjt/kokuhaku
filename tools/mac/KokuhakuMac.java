@@ -36,8 +36,11 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -64,7 +67,7 @@ public final class KokuhakuMac extends JPanel {
     private static final Color RED = new Color(176, 24, 42), RED_LIT = new Color(206, 34, 54);
     private static final int W = 960, H = 620, TITLE_H = 36, SIDE_W = 210, MOST_SHOWN = 7;
     /** This launcher's own version: a newer release on GitHub replaces it. */
-    private static final String LAUNCHER_VERSION = "1.4.0";
+    private static final String LAUNCHER_VERSION = "1.4.1";
     private static final String RELEASES = "https://api.github.com/repos/jabjt/kokuhaku/releases";
     /** Name, detail, "ready" or not, and what changed. */
     private volatile String[][] VERSIONS = {{"Kokuhaku " + LAUNCHER_VERSION, "1.20.1  \u00b7  this one", "ready", "Looking for updates..."}, {"Next update", "1.20.1  \u00b7  WIP", "", ""}};
@@ -600,6 +603,7 @@ public final class KokuhakuMac extends JPanel {
             }
             ensureMap();
             ensureShader();
+            ensureJava();
             if ("1".equals(System.getenv("KOKUHAKU_NOLAUNCH")) || prism == null) System.exit(0);
             say("Starting", -1f);
             if (!quitPrism()) {
@@ -674,6 +678,14 @@ public final class KokuhakuMac extends JPanel {
             if (Files.isDirectory(mods)) {
                 try (var jars = Files.list(mods)) {
                     for (Path jar : jars.filter(p -> p.toString().endsWith(".jar")).toList()) if (!keep.contains(jar.getFileName().toString())) Files.delete(jar);
+                }
+            }
+            // Fabric's copies of the mods inside mods: with the mods changed, stale ones stop it starting.
+            Path cache = game().resolve(".fabric");
+            if (Files.isDirectory(cache)) {
+                try (var all = Files.walk(cache)) {
+                    for (Path p : all.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(p);
+                } catch (IOException ignored) {
                 }
             }
             List<? extends ZipEntry> entries = zip.stream().toList();
@@ -798,6 +810,83 @@ public final class KokuhakuMac extends JPanel {
             Files.write(iris, kept);
         } catch (Exception ignored) {
             // No internet, or Modrinth is down. Not worth stopping the game over.
+        }
+    }
+
+    // Java 21 starts the game quicker than the 17 Prism picks for 1.20.1. Fetched once, kept beside Prism's own.
+    private static final String JAVA_VERSION = "21.0.13";
+    private static final String JAVA_ARM_URL = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.13_9.tar.gz";
+    private static final String JAVA_ARM_SHA256 = "225bab0a09491ef06835488cd942f5d2befa9a0410a2484f0c8bbcf7506ec09a";
+    private static final String JAVA_INTEL_URL = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_mac_hotspot_21.0.13_9.tar.gz";
+    private static final String JAVA_INTEL_SHA256 = "c909674b1c10c261b9a3fb7e9c0efebd303e33f88a4fe84be7135b5e2d711f89";
+    /** Heap: more makes loading quicker, but only where the Mac can spare it. */
+    private static final int ROOMY_HEAP_MB = 4096, TIGHT_HEAP_MB = 2400;
+
+    /** The java inside a fetched Java folder, if it's there. */
+    private static Path javaIn(Path folder) throws IOException {
+        if (!Files.isDirectory(folder)) return null;
+        try (var all = Files.walk(folder)) {
+            return all.filter(p -> p.endsWith(Path.of("Contents", "Home", "bin", "java")) && Files.isExecutable(p)).findFirst().orElse(null);
+        }
+    }
+
+    /** Java 21 and a heap that fits this Mac, written into the instance. If Java 21 can't be had, Prism's own Java runs it, as before. */
+    private void ensureJava() {
+        Path java = null;
+        try {
+            boolean arm = System.getProperty("os.arch", "").contains("aarch64");
+            Path folder = data().resolve("java").resolve("kokuhaku-java-" + JAVA_VERSION + (arm ? "-arm" : "-intel"));
+            java = javaIn(folder);
+            if (java == null) {
+                Files.createDirectories(folder.getParent());
+                Path part = folder.getParent().resolve(folder.getFileName() + ".tar.gz.part");
+                fetch(arm ? JAVA_ARM_URL : JAVA_INTEL_URL, part, "Getting Java");
+                if (!sha256(part).equals(arm ? JAVA_ARM_SHA256 : JAVA_INTEL_SHA256)) {
+                    Files.delete(part);
+                } else {
+                    say("Unpacking Java", -1f);
+                    Files.createDirectories(folder);
+                    Process tar = new ProcessBuilder("/usr/bin/tar", "-xzf", part.toString(), "-C", folder.toString()).redirectErrorStream(true).start();
+                    tar.getInputStream().readAllBytes();
+                    if (tar.waitFor() == 0) java = javaIn(folder);
+                    Files.delete(part);
+                }
+            }
+        } catch (Exception ignored) {
+            java = null;
+        }
+        try {
+            long gb = ((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize() >> 30;
+            Map<String, String> set = new LinkedHashMap<>();
+            set.put("MaxMemAlloc", String.valueOf(gb >= SHADERS_NEED_GB ? ROOMY_HEAP_MB : TIGHT_HEAP_MB));
+            if (java != null) {
+                set.put("OverrideJavaLocation", "true");
+                set.put("JavaPath", java.toString());
+                // 1.20.1 only asks for 17, but runs on 21.
+                set.put("IgnoreJavaCompatibility", "true");
+            } else {
+                set.put("OverrideJavaLocation", "false");
+            }
+            Path cfg = instance().resolve("instance.cfg");
+            if (!Files.exists(cfg)) return;
+            List<String> lines = new ArrayList<>();
+            for (String l : Files.readAllLines(cfg, StandardCharsets.UTF_8)) if (set.keySet().stream().noneMatch(k -> l.startsWith(k + "="))) lines.add(l);
+            set.forEach((k, v) -> lines.add(k + "=" + v));
+            Files.writeString(cfg, String.join("\n", lines) + "\n", StandardCharsets.UTF_8);
+        } catch (Exception ignored) {
+            // Prism's defaults still start it.
+        }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[1 << 16];
+            int read;
+            while ((read = in.read(buffer)) > 0) digest.update(buffer, 0, read);
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IOException(e);
         }
     }
 

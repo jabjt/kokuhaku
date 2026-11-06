@@ -3,6 +3,17 @@
 Kokuhaku runs on Minecraft 1.20.1 (Fabric), launched through Prism Launcher.
 Versions before 1.3.0 weren't tagged at the time; their entries were written up afterwards.
 
+## 1.4.1 — 6 November 2026
+
+### Faster
+- **The game starts quicker.** The first time you open the launcher, it downloads Java 21 (about 50 MB, once) and runs Minecraft on that instead of Java 17. If the download fails, the game starts on Prism's own Java as before.
+- Computers with plenty of memory give the game more of it, so worlds load faster.
+- Added ModernFix, which cuts loading time and memory use.
+
+### Fixed
+- After an update changed the mods, the game could fail to start until you reinstalled it. The launcher now clears Fabric's old copies of the mods.
+- A change to the mods or settings now always reinstalls the game, even when Kokuhaku itself hasn't changed.
+
 ## 1.4.0 — 6 November 2026
 
 ### New

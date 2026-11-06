@@ -33,7 +33,7 @@ OverrideMemory=true
 MinMemAlloc=1024
 MaxMemAlloc=2400
 OverrideJavaArgs=true
-JvmArgs=-XX:CICompilerCount=2 -XX:ReservedCodeCacheSize=200M
+JvmArgs=-XX:ReservedCodeCacheSize=200M
 '@
 [IO.File]::WriteAllText((Join-Path $instance 'instance.cfg'), $cfg.Replace("`r`n", "`n") + "`n", $u)
 

@@ -31,7 +31,11 @@ if (Test-Path 'tools\launcher\map.txt') { Copy-Item 'tools\launcher\map.txt' "$i
 $pack = [regex]::Match($installer, "\`$pack = '(.*?)'").Groups[1].Value
 [IO.File]::WriteAllText("$instance\mmc-pack.json", $pack, $u)
 $jar = Get-Item 'dist\Kokuhaku\game\mods\kokuhaku-0.1.0.jar'
-[IO.File]::WriteAllText("$stage\version.txt", "$($jar.Length)-$($jar.LastWriteTimeUtc.Ticks)", $u)
+# The mods and the settings count too, so a change to either reinstalls even when Kokuhaku's own jar hasn't changed.
+$everything = ((Get-ChildItem 'dist\Kokuhaku\game\mods' -Filter '*.jar' | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Length)" }) -join ';') + $cfg
+$sha = [Security.Cryptography.SHA1]::Create()
+$extra = ([BitConverter]::ToString($sha.ComputeHash($u.GetBytes($everything))) -replace '-', '').Substring(0, 12).ToLowerInvariant()
+[IO.File]::WriteAllText("$stage\version.txt", "$($jar.Length)-$($jar.LastWriteTimeUtc.Ticks)-$extra", $u)
 
 $zip = Join-Path $env:TEMP 'kk\game.zip'
 if (Test-Path $zip) { Remove-Item $zip -Confirm:$false }

@@ -42,7 +42,7 @@ public class KokuhakuLauncher : Form
     private const int TitleH = 36, SideW = 210;
 
     /// This launcher's own version: a newer release on GitHub replaces it.
-    private const string LauncherVersion = "1.4.0";
+    private const string LauncherVersion = "1.4.1";
     private const string Releases = "https://api.github.com/repos/jabjt/kokuhaku/releases";
     private const int MostShown = 7;
 
@@ -129,6 +129,13 @@ public class KokuhakuLauncher : Form
                         if (!keep.Contains(Path.GetFileName(jar))) File.Delete(jar);
                     }
                 }
+                // Fabric's copies of the mods inside mods: with the mods changed, stale ones stop it starting.
+                try
+                {
+                    string cache = Path.Combine(instance, ".minecraft", ".fabric");
+                    if (Directory.Exists(cache)) Directory.Delete(cache, true);
+                }
+                catch (Exception) { }
                 int done = 0, all = zip.Entries.Count;
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
@@ -259,6 +266,92 @@ public class KokuhakuLauncher : Form
         }
     }
 
+    // Java 21 starts the game quicker than the 17 Prism picks for 1.20.1. Fetched once, kept beside Prism's own.
+    private const string JavaUrl = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.13_9.zip";
+    private const string JavaSha256 = "2332c0b4cff6bed722da3567c91d5e47568bcba863fa4945d0a8d6fc76158628";
+    private const string JavaFolder = "kokuhaku-java-21.0.13";
+    /// Heap: more makes loading quicker, but only where the PC can spare it.
+    private const int RoomyHeapMb = 4096, TightHeapMb = 2400;
+
+    /// <summary>
+    /// Java 21 and a heap that fits this PC, written into the instance. If Java 21 can't be had,
+    /// Prism's own Java runs it, as before.
+    /// </summary>
+    private void EnsureJava()
+    {
+        string java = null;
+        try
+        {
+            string folder = Path.Combine(Data(), "java", JavaFolder);
+            java = Directory.Exists(folder) ? Directory.GetFiles(folder, "javaw.exe", SearchOption.AllDirectories).FirstOrDefault() : null;
+            if (java == null && Environment.Is64BitOperatingSystem && Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") != "ARM64")
+            {
+                string part = folder + ".zip.part";
+                Directory.CreateDirectory(Path.GetDirectoryName(part));
+                Fetch(JavaUrl, part, "Getting Java");
+                if (Sha256(part) != JavaSha256)
+                {
+                    File.Delete(part);
+                }
+                else
+                {
+                    Say("Unpacking Java", -1f);
+                    string temp = folder + ".new";
+                    if (Directory.Exists(temp)) Directory.Delete(temp, true);
+                    ZipFile.ExtractToDirectory(part, temp);
+                    File.Delete(part);
+                    if (Directory.Exists(folder)) Directory.Delete(folder, true);
+                    Directory.Move(temp, folder);
+                    java = Directory.GetFiles(folder, "javaw.exe", SearchOption.AllDirectories).FirstOrDefault();
+                }
+            }
+        }
+        catch (Exception)
+        {
+            java = null;
+        }
+        try
+        {
+            var set = new Dictionary<string, string>();
+            set["MaxMemAlloc"] = (FreeMemoryMb() >= ShadersNeedMb ? RoomyHeapMb : TightHeapMb).ToString();
+            if (java != null)
+            {
+                set["OverrideJavaLocation"] = "true";
+                set["JavaPath"] = java.Replace('\\', '/');
+                // 1.20.1 only asks for 17, but runs on 21.
+                set["IgnoreJavaCompatibility"] = "true";
+            }
+            else
+            {
+                set["OverrideJavaLocation"] = "false";
+            }
+            Configure(set);
+        }
+        catch (Exception)
+        {
+            // Prism's defaults still start it.
+        }
+    }
+
+    /// <summary>Sets keys in the instance's instance.cfg, keeping everything else.</summary>
+    private static void Configure(Dictionary<string, string> set)
+    {
+        string cfg = Path.Combine(Data(), "instances", Instance, "instance.cfg");
+        if (!File.Exists(cfg)) return;
+        var lines = File.ReadAllLines(cfg).Where(l => !set.Keys.Any(k => l.StartsWith(k + "="))).ToList();
+        lines.AddRange(set.Select(kv => kv.Key + "=" + kv.Value));
+        File.WriteAllText(cfg, string.Join("\n", lines) + "\n", new System.Text.UTF8Encoding(false));
+    }
+
+    private static string Sha256(string file)
+    {
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+        using (Stream s = File.OpenRead(file))
+        {
+            return BitConverter.ToString(sha.ComputeHash(s)).Replace("-", "").ToLowerInvariant();
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private class MemoryStatus
     {
@@ -341,6 +434,8 @@ public class KokuhakuLauncher : Form
         timer.Tick += (sender, args) => Tick();
         timer.Start();
         new Thread(CheckForUpdates) { IsBackground = true }.Start();
+        // Developer testing only: presses Launch by itself.
+        if (Environment.GetEnvironmentVariable("KOKUHAKU_AUTOLAUNCH") == "1") Shown += (s, a) => Launch();
         string shot = Environment.GetEnvironmentVariable("KOKUHAKU_LAUNCHERSHOT");
         if (!string.IsNullOrEmpty(shot))
         {
@@ -577,6 +672,7 @@ public class KokuhakuLauncher : Form
             }
             EnsureMap();
             EnsureShader();
+            EnsureJava();
             Say("Starting", -1f);
             bool free = Environment.GetEnvironmentVariable("KOKUHAKU_NOLAUNCH") == "1" || ClosePrism();
             BeginInvoke((Action)(() =>
