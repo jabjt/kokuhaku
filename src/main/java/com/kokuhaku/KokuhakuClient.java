@@ -106,6 +106,9 @@ public class KokuhakuClient implements ClientModInitializer {
                 new Identifier(MOD_ID, "shota"), mod, ResourcePackActivationType.ALWAYS_ENABLED));
         KeyBindings.init();
         HudRenderCallback.EVENT.register(RunHud::render);
+        HudRenderCallback.EVENT.register(com.kokuhaku.client.PhoneBanner::render);
+        ClientTickEvents.END_CLIENT_TICK.register(com.kokuhaku.client.PhotoAlbum::tick);
+        WorldRenderEvents.END.register(context -> com.kokuhaku.client.PhotoAlbum.frameDrawn());
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             com.kokuhaku.client.GameSettings.tick(client);
@@ -282,6 +285,15 @@ public class KokuhakuClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(Net.REEL, (client, handler, buf, sender) -> {
             String reel = buf.readString();
             client.execute(() -> ClientRun.reel = reel);
+        });
+        ClientPlayNetworking.registerGlobalReceiver(Net.PHONE_PING, (client, handler, buf, sender) -> {
+            String chat = buf.readString(), from = buf.readString(), body = buf.readString();
+            boolean dead = buf.readBoolean(), photo = buf.readBoolean();
+            client.execute(() -> com.kokuhaku.client.PhoneBanner.show(chat, from, body, dead, photo));
+        });
+        ClientPlayNetworking.registerGlobalReceiver(Net.PHOTO_TAKE, (client, handler, buf, sender) -> {
+            int id = buf.readVarInt();
+            client.execute(() -> com.kokuhaku.client.PhotoAlbum.request(id));
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.PHONE, (client, handler, buf, sender) -> {
             NbtCompound nbt = buf.readNbt();

@@ -53,8 +53,14 @@ public final class Net {
     public static final Identifier REEL = id("reel");
     /** NBT: every message, and any answers you can give. */
     public static final Identifier PHONE = id("phone");
+    /** A message has arrived: from, sender, body, from the dead, is a photo. For the banner across the top. */
+    public static final Identifier PHONE_PING = id("phone_ping");
+    /** Photograph yourself from behind for her, as picture number id. */
+    public static final Identifier PHOTO_TAKE = id("photo_take");
 
     // Client -> server
+    /** A ghost's words for the class chat: count, then each word's place in Phone.GHOST_WORDS. */
+    public static final Identifier GHOST_SAY = id("ghost_say");
     /** You got your phone out. */
     public static final Identifier OPEN_PHONE = id("open_phone");
     /** Your answer: option. */

@@ -1308,7 +1308,7 @@ public final class RunManager {
         p.teleport(p.getServerWorld(), at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), 0f);
     }
 
-    private static boolean isGhost(ServerPlayerEntity p) {
+    static boolean isGhost(ServerPlayerEntity p) {
         return ghosts.contains(p.getUuid());
     }
 
@@ -2966,6 +2966,27 @@ public final class RunManager {
                 later(160, () -> Phone.reply(p, 0));
                 later(290, () -> Phone.open(p, false));
                 later(320, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
+            }
+            case "phone2" -> {
+                // Everything new on the phone: names in the group, her typing on and off, a photo,
+                // something of hers taken back, something of yours gone, the dead, and a ghost.
+                s.day = 7;
+                s.minute = Schedule.AFTER_SCHOOL + 20;
+                p.getServerWorld().setTimeOfDay(Schedule.worldTime(8, s.minute));
+                Phone.text(p.server, s, "Unknown number", "Good night. I'll know if you're not asleep.");
+                Phone.text(p.server, s, "Class 2-A", "who keeps leaving the art room window open");
+                s.day = 8;
+                Phone.text(p.server, s, "Haruka M.", "are you walking home the usual way tonight?");
+                Phone.text(p.server, s, "Class 2-A", "does anyone have the maths answers");
+                Phone.text(p.server, s, "Class 2-A", "the last train was running at 3am again. i live by the line");
+                Phone.fromHer(p.server, s, "Why are you at the station?", Phone::devReplies);
+                later(20, () -> Phone.photo(p.server, s, List.of(p), 60));
+                later(34, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
+                later(100, () -> Phone.open(p, false));
+                later(124, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
+                later(250, () -> Phone.reply(p, 0));
+                later(330, () -> Phone.devStrange(p.server, s));
+                later(380, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
             }
             case "reel" -> {
                 s.day = 9;

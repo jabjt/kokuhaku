@@ -3,6 +3,19 @@
 Kokuhaku runs on Minecraft 1.20.1 (Fabric), launched through Prism Launcher.
 Versions before 1.3.0 weren't tagged at the time; their entries were written up afterwards.
 
+## 1.4.2 — 6 November 2026
+
+### New
+- **She types before she sends.** "typing…" comes and goes in bursts before her message arrives, in the chat and in your list of chats. Some nights she types for a while and nothing comes.
+- **Messages she takes back.** Later in the month, some of what she sends turns into "This message was deleted" a minute after it arrives. Near the end, something you sent says "You deleted this message". You didn't.
+- **Photos of you.** Now and then she sends a picture of you, taken from behind. If the screen flickers out of your own eyes for a moment, that's when she took it.
+- **Names in the class chat.** Every message has a classmate's name on it, in their own colour. The ones who've died stop posting. Mostly.
+- **Notifications.** A message slides in at the top of the screen when it arrives, so you know she's written without getting your phone out.
+- **Ghosts can write to the living.** In the class chat a ghost can pick up to four words and post them, once every half a minute. The living see them from "Unknown", with most of the letters lost.
+
+### Fixed
+- As a ghost, some messages on the phone turned green or yellow partway through.
+
 ## 1.4.1 — 6 November 2026
 
 ### Faster

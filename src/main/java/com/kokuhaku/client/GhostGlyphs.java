@@ -9,8 +9,8 @@ package com.kokuhaku.client;
 public final class GhostGlyphs {
     /** How many letters in a hundred are lost. */
     private static final int LOST = 30;
-    /** † ‡ § ⛤ ⛧ ᚦ ᛉ ⸸ ꙮ ¤ */
-    private static final String MARKS = "†‡§⛤⛧ᚦᛉ⸸ꙮ¤";
+    /** † ‡ ¶ ⛤ ⛧ ᚦ ᛉ ⸸ ꙮ ¤. Never §: Minecraft reads it and the letter after it as a colour. */
+    private static final String MARKS = "†‡¶⛤⛧ᚦᛉ⸸ꙮ¤";
 
     private GhostGlyphs() {
     }
@@ -21,11 +21,16 @@ public final class GhostGlyphs {
     }
 
     public static String scramble(String text, long seed) {
+        return scramble(text, seed, LOST);
+    }
+
+    /** As scramble, losing about this many letters in a hundred. */
+    public static String scramble(String text, long seed, int lost) {
         StringBuilder out = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             long h = mix(seed * 31 + i);
-            if (Character.isLetter(c) && Math.floorMod(h, 100) < LOST) out.append(MARKS.charAt((int) Math.floorMod(h >>> 8, MARKS.length())));
+            if (Character.isLetter(c) && Math.floorMod(h, 100) < lost) out.append(MARKS.charAt((int) Math.floorMod(h >>> 8, MARKS.length())));
             else out.append(c);
         }
         return out.toString();
