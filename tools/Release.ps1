@@ -80,6 +80,9 @@ if (-not $Publish) {
 }
 
 # ---- Out it goes ----
+# git and gh report progress on their error stream, which PowerShell 5 would take for a failure:
+# only their exit codes count from here.
+$ErrorActionPreference = 'Continue'
 & $git push origin main
 if ($LASTEXITCODE -ne 0) { Stop-With 'pushing main failed' }
 $paths = $files | ForEach-Object { Join-Path $out $_ }
