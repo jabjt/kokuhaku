@@ -89,8 +89,11 @@ public class Kokuhaku implements ModInitializer {
             boolean devoted = buf.readBoolean(), accomplice = buf.readBoolean();
             server.execute(() -> RunManager.begin(player, difficulty, devoted, accomplice));
         });
-        ServerPlayNetworking.registerGlobalReceiver(Net.OPEN_PHONE, (server, player, handler, buf, sender) ->
-                server.execute(() -> com.kokuhaku.game.Phone.open(player)));
+        ServerPlayNetworking.registerGlobalReceiver(Net.OPEN_PHONE, (server, player, handler, buf, sender) -> {
+            // An open phone asks again every couple of seconds; anything else is someone getting it out.
+            boolean refresh = buf.isReadable() && buf.readBoolean();
+            server.execute(() -> com.kokuhaku.game.Phone.open(player, refresh));
+        });
         ServerPlayNetworking.registerGlobalReceiver(Net.PHONE_REPLY, (server, player, handler, buf, sender) -> {
             int option = buf.readVarInt();
             server.execute(() -> com.kokuhaku.game.Phone.reply(player, option));

@@ -2946,8 +2946,13 @@ public final class RunManager {
             }
             case "phone" -> {
                 s.day = 5;
-                s.minute = Schedule.AFTER_SCHOOL + 34;
+                s.minute = Schedule.AFTER_SCHOOL + 20;
                 p.getServerWorld().setTimeOfDay(Schedule.worldTime(s.day, s.minute));
+                if (System.getenv("KOKUHAKU_PHONEDEVOTED") != null) s.devoted = true;
+                s.day = 4;
+                Phone.text(p.server, s, "Haruka M.", "are you walking home the usual way tonight?");
+                Phone.text(p.server, s, "Class 2-A", "who keeps leaving the art room window open");
+                s.day = 5;
                 Phone.text(p.server, s, "Class 2-A", "does anyone have the maths answers");
                 Phone.text(p.server, s, "Class 2-A", "the last train was running at 3am again. i live by the line");
                 Phone.fromHer(p.server, s, "Why are you at the station?");
@@ -2955,11 +2960,11 @@ public final class RunManager {
                 later(100, () -> {
                     Kokuhaku.LOG.info("Unread {}", Phone.unread());
                     ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty());
-                    Phone.open(p);
+                    Phone.open(p, false);
                 });
                 later(140, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
                 later(160, () -> Phone.reply(p, 0));
-                later(290, () -> Phone.open(p));
+                later(290, () -> Phone.open(p, false));
                 later(320, () -> ServerPlayNetworking.send(p, Net.SHOT, PacketByteBufs.empty()));
             }
             case "reel" -> {

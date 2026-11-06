@@ -390,9 +390,9 @@ public final class DevBot {
             log("Phone: %d messages, last: %s", messages.size(), messages.isEmpty() ? "" : messages.getCompound(messages.size() - 1).getString("From") + ": " + messages.getCompound(messages.size() - 1).getString("Body"));
             return;
         }
-        List<MenuButton> b = buttons(sc);
-        if (!b.isEmpty() && said == 2) {
-            click(sc, b.get(RANDOM.nextInt(b.size())));
+        PhoneScreen phone = (PhoneScreen) sc;
+        if (phone.replyCount() > 0 && said == 2) {
+            phone.choose(RANDOM.nextInt(phone.replyCount()));
             return;
         }
         if (said > 3) sc.keyPressed(KeyBindings.PHONE.getDefaultKey().getCode(), 0, 0);

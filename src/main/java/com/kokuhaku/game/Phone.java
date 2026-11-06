@@ -93,7 +93,12 @@ public final class Phone {
     }
 
     static void fromHer(MinecraftServer server, RunState s, String body) {
-        receive(server, s, Living.active(s) ? Roster.get(s.livingWith).firstName() : UNKNOWN, body);
+        receive(server, s, herName(s), body);
+    }
+
+    /** What her messages come from: a number you don't know, until you're living with her. */
+    private static String herName(RunState s) {
+        return Living.active(s) ? Roster.get(s.livingWith).firstName() : UNKNOWN;
     }
 
     private static String pick(List<String> lines) {
@@ -155,17 +160,29 @@ public final class Phone {
         waiting = REPLIES;
     }
 
-    public static void open(ServerPlayerEntity p) {
+    /** The phone asks again every couple of seconds while it's open, so new messages turn up as they arrive. */
+    public static void open(ServerPlayerEntity p, boolean refresh) {
+        int fresh = unread;
         unread = 0;
-        send(p);
+        send(p, fresh, refresh);
     }
 
-    private static void send(ServerPlayerEntity p) {
+    /**
+     * Everything the screen shows. Each message's From is the conversation it's in, yours included.
+     * Unread is how many of the newest weren't seen before this opening. Devoted is No One Will Save
+     * You, where she has your phone and nothing gets out; Watched is how close something is, 0..1.
+     * Refresh only updates a phone that's already open, and never takes it out.
+     */
+    private static void send(ServerPlayerEntity p, int fresh, boolean refresh) {
+        RunState s = RunManager.state(p.server);
         NbtCompound nbt = new NbtCompound();
+        nbt.putBoolean("Refresh", refresh);
         NbtList messages = new NbtList();
         for (Message m : feed) {
             NbtCompound e = new NbtCompound();
             e.putString("When", "Day " + m.day() + ", " + Schedule.clock(m.minute()));
+            e.putInt("Day", m.day());
+            e.putString("Clock", Schedule.clock(m.minute()));
             e.putString("From", m.from());
             e.putString("Body", m.body());
             e.putBoolean("Mine", m.mine());
@@ -175,6 +192,10 @@ public final class Phone {
         NbtList replies = new NbtList();
         for (Reply r : waiting) replies.add(NbtString.of(r.label()));
         nbt.put("Replies", replies);
+        nbt.putString("ReplyIn", herName(s));
+        nbt.putInt("Unread", fresh);
+        nbt.putBoolean("Devoted", s.devoted);
+        nbt.putFloat("Watched", Chase.secondsLeft(p) >= 0 ? 1f : Stalker.closeness(p));
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeNbt(nbt);
         ServerPlayNetworking.send(p, Net.PHONE, buf);
@@ -185,12 +206,12 @@ public final class Phone {
         RunState s = RunManager.state(p.server);
         Reply r = waiting.get(option);
         waiting = List.of();
-        feed.add(new Message(s.day, s.minute, "You", r.label(), true));
+        feed.add(new Message(s.day, s.minute, herName(s), r.label(), true));
         int her = s.freeYandere();
         s.fondness[her] = Math.max(-5, Math.min(5, s.fondness[her] + r.fondness()));
         s.markDirty();
         Shadow.saw(s, "You answered her text. She read it forty times.");
-        send(p);
+        send(p, 0, true);
         RunManager.later(100, () -> fromHer(p.server, s, r.answer()));
     }
 }

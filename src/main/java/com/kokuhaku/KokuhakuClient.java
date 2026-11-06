@@ -285,7 +285,7 @@ public class KokuhakuClient implements ClientModInitializer {
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.PHONE, (client, handler, buf, sender) -> {
             NbtCompound nbt = buf.readNbt();
-            client.execute(() -> client.setScreen(new com.kokuhaku.screen.PhoneScreen(nbt)));
+            client.execute(() -> com.kokuhaku.screen.PhoneScreen.receive(client, nbt));
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.END, (client, handler, buf, sender) -> {
             int kind = buf.readVarInt(), yandere = buf.readVarInt();
