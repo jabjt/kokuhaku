@@ -129,19 +129,8 @@ public class KokuhakuLauncher : Form
                         if (!keep.Contains(Path.GetFileName(jar))) File.Delete(jar);
                     }
                 }
-                // Fabric's copies of the mods inside mods: with the mods changed, stale ones stop it starting.
-                // Moved aside before it's deleted: Windows can take a while to finish deleting a folder,
-                // and until it has, Fabric can't make a new one of the same name and won't start.
-                try
-                {
-                    string minecraft = Path.Combine(instance, ".minecraft"), cache = Path.Combine(minecraft, ".fabric");
-                    if (Directory.Exists(cache)) Directory.Move(cache, cache + ".old-" + DateTime.Now.Ticks);
-                    foreach (string old in Directory.GetDirectories(minecraft, ".fabric.old-*"))
-                    {
-                        try { Directory.Delete(old, true); } catch (Exception) { }
-                    }
-                }
-                catch (Exception) { }
+                // Fabric's cache in .fabric is left alone: it notices changed mods by itself, and where
+                // Prism's folder has been moved and linked back, Fabric can't always make it again.
                 int done = 0, all = zip.Entries.Count;
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {

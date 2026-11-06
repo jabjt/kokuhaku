@@ -11,7 +11,6 @@ Versions before 1.3.0 weren't tagged at the time; their entries were written up 
 - Added ModernFix, which cuts loading time and memory use.
 
 ### Fixed
-- After an update changed the mods, the game could fail to start until you reinstalled it. The launcher now clears Fabric's old copies of the mods.
 - A change to the mods or settings now always reinstalls the game, even when Kokuhaku itself hasn't changed.
 
 ## 1.4.0 — 6 November 2026

@@ -36,7 +36,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -680,14 +679,7 @@ public final class KokuhakuMac extends JPanel {
                     for (Path jar : jars.filter(p -> p.toString().endsWith(".jar")).toList()) if (!keep.contains(jar.getFileName().toString())) Files.delete(jar);
                 }
             }
-            // Fabric's copies of the mods inside mods: with the mods changed, stale ones stop it starting.
-            Path cache = game().resolve(".fabric");
-            if (Files.isDirectory(cache)) {
-                try (var all = Files.walk(cache)) {
-                    for (Path p : all.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(p);
-                } catch (IOException ignored) {
-                }
-            }
+            // Fabric's cache in .fabric is left alone: it notices changed mods by itself.
             List<? extends ZipEntry> entries = zip.stream().toList();
             int done = 0;
             for (ZipEntry entry : entries) {
